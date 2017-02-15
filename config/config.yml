@@ -1,0 +1,207 @@
+---
+# `vagrant_box` can also be set to geerlingguy/centos6, geerlingguy/centos7,
+# geerlingguy/ubuntu1404, geerlingguy/ubuntu1204, parallels/ubuntu-14.04, etc.
+vagrant_box: geerlingguy/ubuntu1404
+vagrant_user: vagrant
+vagrant_synced_folder_default_type: nfs
+
+# If you need to run multiple instances of Drupal VM, set a unique hostname,
+# machine name, and IP address for each instance.
+vagrant_hostname: comundi-pim.dev
+vagrant_machine_name: comundi-pim
+vagrant_ip: 192.168.88.93
+
+# A list of synced folders, with the keys 'local_path', 'destination', and
+# a 'type' of [nfs|rsync|smb] (leave empty for slow native shares). See
+# http://docs.drupalvm.com/en/latest/extras/syncing-folders/ for more info.
+vagrant_synced_folders:
+  # The first synced folder will be used for the default Drupal installation, if
+  # any of the build_* settings are 'true'. By default the folder is set to
+  # the drupal-vm folder.
+  - local_path: ../apps/akeneo
+    destination: /var/www/akeneo
+    type: nfs
+    create: true
+  - local_path: ../apps/front
+    destination: /var/www/front
+    type: nfs
+    create: true
+
+# Memory and CPU to use for this VM.
+vagrant_memory: 4096
+vagrant_cpus: 1
+
+# Minimum required versions.
+drupalvm_vagrant_version_min: '1.8.5'
+drupalvm_ansible_version_min: '2.1'
+
+# Force use of ansible_local provisioner, even if Ansible is installed on host.
+force_ansible_local: false
+
+# The web server software to use. Can be either 'apache' or 'nginx'.
+drupalvm_webserver: apache
+
+# The database system to use. Can be either 'mysql' or 'pgsql'.
+drupalvm_database: mysql
+
+build_makefile: false
+build_composer: false
+build_composer_project: false
+install_site: false
+
+pim_domain: 'pim.comundi.dev'
+pim_dir: '/var/www/akeneo/web'
+
+apache_vhosts:
+  - servername: "{{ pim_domain }}"
+    documentroot: "{{ pim_dir }}"
+    extra_parameters: |
+      <Directory "{{ pim_dir }}">
+        DirectoryIndex app_dev.php
+        RewriteEngine On
+        RewriteBase /
+        Options Indexes FollowSymLinks MultiViews
+        Require all granted
+        AllowOverride All
+        Order allow,deny
+        allow from all
+      </Directory>
+
+      ErrorLog /var/log/apache2/pim.comundi.dev-error.log
+
+      # Possible values include: debug, info, notice, warn, error, crit,
+      # alert, emerg.
+      LogLevel debug
+
+      CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+apache_remove_default_vhost: true
+apache_mods_enabled:
+  - expires.load
+  - ssl.load
+  - rewrite.load
+  - proxy.load
+  - proxy_fcgi.load
+
+# MySQL databases and users.
+mysql_databases:
+  - name: "weka_comundi"
+    encoding: utf8mb4
+    collation: utf8mb4_general_ci
+
+mysql_users:
+  - name: "weka"
+    host: "localhost"
+    password: ""
+    priv: "weka_comundi.*:ALL"
+
+# Comment out any extra utilities you don't want to install. If you don't want
+# to install *any* extras, set this value to an empty set, e.g. `[]`.
+installed_extras:
+  # - adminer
+  # - blackfire
+  # - drupalconsole
+  # - elasticsearch
+  # - mailhog
+  # - memcached
+  # - newrelic
+  # - nodejs
+    - pimpmylog
+  # - redis
+  # - ruby
+  # - selenium
+  # - solr
+  # - varnish
+  #  - xdebug
+  # - xhprof
+
+# Add any extra apt or yum packages you would like installed.
+extra_packages:
+  - sqlite
+
+# You can configure almost anything else on the server in the rest of this file.
+extra_security_enabled: false
+
+drush_version: "master"
+drush_keep_updated: true
+
+firewall_allowed_tcp_ports:
+  - "22"
+  - "25"
+  - "80"
+  - "81"
+  - "443"
+  - "4444"
+  - "8025"
+  - "8080"
+  - "8443"
+  - "8983"
+  - "9200"
+firewall_log_dropped_packets: false
+
+# PHP Configuration. Currently-supported versions: 5.6, 7.0.
+# To use 5.6, see: http://docs.drupalvm.com/en/latest/other/php-56/
+php_version: "5.6"
+php_install_recommends: no
+php_packages:
+  - php5.6
+  - php5.6-apcu
+  - php5.6-mcrypt
+  - php5.6-cli
+  - php5.6-common
+  - php5.6-curl
+  - php5.6-dev
+  - php5.6-fpm
+  - php5.6-gd
+  - php5.6-sqlite3
+  - php5.6-xml
+  - php5.6-mbstring
+  - php5.6-soap
+  - php5.6-intl
+  - php5.6-mongo
+  - php5.6-zip
+  - php-pear
+  - libpcre3-dev
+  - libapache2-mod-php5.6
+php_conf_paths:
+  - /etc/php5.6/apache2
+  - /etc/php5.6/cli
+php_extension_conf_paths:
+  - /etc/php5.6/apache2/conf.d
+  - /etc/php5.6/cli/conf.d
+
+php_enable_php_fpm: false
+php_mysql_package: php5.6-mysql
+php_memory_limit: "4096M"
+php_display_errors: "On"
+php_display_startup_errors: "On"
+php_realpath_cache_size: "192M"
+php_sendmail_path: "/opt/mailhog/mhsendmail"
+php_opcache_enabled_in_ini: true
+php_opcache_memory_consumption: "192"
+php_opcache_max_accelerated_files: 4096
+php_max_input_vars: "4000"
+
+composer_path: /usr/bin/composer
+composer_home_path: "/home/{{ drupalvm_user }}/.composer"
+composer_home_owner: "{{ drupalvm_user }}"
+composer_home_group: "{{ drupalvm_user }}"
+composer_global_packages:
+  - { name: hirak/prestissimo, release: '^0.3' }
+
+# Run specified scripts before or after VM is provisioned. Path is relative to
+# the `provisioning/playbook.yml` file.
+pre_provision_scripts: []
+post_provision_scripts: []
+  # - "../examples/scripts/configure-solr.sh"
+
+# MySQL Configuration.
+mysql_root_password: root
+mysql_slow_query_log_enabled: true
+mysql_slow_query_time: 2
+mysql_wait_timeout: 300
+adminer_install_filename: index.php
+
+known_hosts_path: ~/.ssh/known_hosts
+#ssh_home: "{{ drupal_core_path }}"
+drupal_major_version: 7
